@@ -35,16 +35,16 @@ let user2 = {
 // Socket room을 만드는 Id = 사용자 2명의 nickname
 let roomId = '';
 
+const createRoom(roomId);
 
-
-function createRoom (roomId) {
-    socket.emit("nickname", roomId);
-    //socket.join(roomId);
-
-}
 
 wsServer.on("connection", (socket) => {
     console.log("Connected to Web Socket Server!");
+    createRoom = (roomId) => {
+        socket.emit("nickname", roomId);
+        //socket.join(roomId);
+    
+    }
     // socket.on("enterRoom", (nickname)=>{
     //     roomId = nickname;
     //     console.log('socket.on createRoom!');
