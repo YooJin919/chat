@@ -1,5 +1,6 @@
 import express from "express";
 import http from "http";
+import axios from "axios";
 import socketIO from "socket.io";
 import { createBrotliCompress } from "zlib";
 
@@ -14,7 +15,8 @@ require('dotenv').config(); // .env 파일을 읽어오기 위한 패키지
 app.set("view engine", "pug");
 app.set("views", __dirname+"/views");
 app.use("/public", express.static(__dirname+"/public"));
-app.use(express.urlencoded({ extended: true })); app.use(express.json());
+app.use(express.urlencoded({ extended: true })); 
+app.use(express.json());
 
 
 app.get("/", (_, res)=>{
@@ -22,42 +24,46 @@ app.get("/", (_, res)=>{
 })
 
 
+
 // # Spring에서 request로 매칭된 사용자 2명의 nickname을 받고 오름차순으로 user1, user2 정의
 let user1 = {
-    nickname: "dongha",
+    nickname: "",
     Id: "",
 };
 let user2 = {
-    nickname: "jin",
+    nickname: "",
     Id: "",
 };
 
 // Socket room을 만드는 Id = 사용자 2명의 nickname
 let roomId = '';
 
-const createRoom(roomId);
+//function createRoom(roomId);
 
 
 wsServer.on("connection", (socket) => {
     console.log("Connected to Web Socket Server!");
-    createRoom = (roomId) => {
-        socket.emit("nickname", roomId);
-        //socket.join(roomId);
-    
-    }
-    // socket.on("enterRoom", (nickname)=>{
-    //     roomId = nickname;
-    //     console.log('socket.on createRoom!');
-    //     console.log(roomId);
 
-    //     console.log('socker.rooms : ',socket.rooms);
-    //     console.log('socket.id (before join) : ',socket.id);
-    //     socket.join(roomId); // room 생성
-    //     console.log('socket.id (after join) : ',socket.rooms);
-    // });
+    // 매칭된 사용자 nickname으로 Room 생성하기
+    socket.on("userNickname", (nickname)=>{
+        console.log('# server : enterRoom!');
+        user = nickname.split;
+        user1.nickname = user[0];
+        user2.nickname = user[1];
+        
+        // // front에서 보내준 nickname으로 roomId 설정
+        // roomId = user1.nickname + " " + user2.nickname; 
+        // console.log(roomId);
+
+        // // 설정한 roomId로 Room 생성
+        // console.log('socker.rooms : ',socket.rooms);
+        // console.log('socket.id (before join) : ',socket.id);
+        // socket.join(roomId); // room 생성
+        // console.log('socket.id (after join) : ',socket.rooms);
+    });
 });
 
-
+// user nickname으로 DB에서 userId 찾기
 const get_user_info = async (req, res) => {
     try {
         let db = await mysql.createConnection({
@@ -77,33 +83,41 @@ const get_user_info = async (req, res) => {
             user2.Id = us[0].Id;
         }
         console.log('user1 : ', user1, ' user2 : ',user2);
-        roomId = user1.nickname + " " + user2.nickname;
-        createRoom(roomId);
-        //res.send(roomId); // front 화면에 보냄
-        res.render("home");
     } catch(err){
-        console.log(err);
-        res.send(err);
+        console.log('err in get_user_info\n', err);
     }
 }
 
-app.get('/test', get_user_info);
 
 // // 매칭된 2명의 사용자 nickname 받기
-// app.post("http://3.39.141.110:8080/user/nickname",(req, res)=>{
-//     // req.body = {
-//     //     "user1" : "nickname",
-//     //     "user2" : "nickname"
-//     // }
-//     console.log(req.body);
+//app.get('/test', get_user_info);
 
-//     user1.nickname=req.body.user1;
-//     user2.nickname=req.body.user2;
-//     roomId = user1.nickname + " " + user2.nickname;
-//     get_user_info();
-//     createRoom(roomId); // 채팅방 생성
-//     res.send(user);
-// } )
+// http://3.39.141.110:8080/user/nickname
+
+// res.body = {
+//     "user1" : "nickname",
+//     "user2" : "nickname"
+// }
+
+// POST -> nickname 받기
+axios({
+    mehtod: "post",
+    url: "http://localhost:3000/user/matchResult",
+    data:{
+        user1: user1.nickname,
+        user2: user2.nickname,
+    },
+})
+.then(function(res){
+    console.log('user1 : ', user1.nickname, 'user2 : ',user2.nickname);
+    console.log(res.body);
+    roomId = user1.nickname + " " + user2.nickname;
+    get_user_info();
+    createRoom(roomId); // 채팅방 생성
+})
+.catch(function(err){
+    console.log('error in post /matchResult', err);
+})
 
 
 const handleListen = () => {

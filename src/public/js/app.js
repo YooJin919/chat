@@ -12,9 +12,11 @@ socket.on("nickname", handleNickname);
 
 function handleStart(event){
     event.preventDefault();
-    window.location.replace(`http://localhost:3000/test`); // page 이동
-    console.log("button clicked!");
-    nickname = 'jin dongha';
-    socket.emit("enterRoom", nickname);
+    
+    console.log("# front : button clicked!");
+    let nickname = 'jin dongha';
+    window.location.replace(`http://localhost:3000/user/matchResult`); // page 이동
+    //socket.emit("userNickname", nickname);
 }
 start_button.addEventListener("click", handleStart);
+
