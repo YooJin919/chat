@@ -10,7 +10,7 @@ function handleNickname(event){
     const input = start.querySelector("#name input");
     let name = input.value;
     console.log(`input.value : ${name}`);
-    socket.emit("userNickname", name);
+    socket.emit("userNickname", name);    
 }
 
 nameForm.addEventListener("submit", handleNickname);

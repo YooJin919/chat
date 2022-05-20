@@ -4,15 +4,17 @@ html(lang="ko")
         meta(charset="UTF-8")
         meta(http-equiv="X-UA-Compatible", content="IE=edge")
         meta(name="viewport", content="width=device-width, initial-scale=1.0")
-        title Home
+        title ChatRoom
         link(rel="stylesheet", href="https://unpkg.com/mvp.css")
-    body 
+    body
         header
             h1 Co-delivery
         main
-            div#room
+            div#chat
+                ul
                 form#msg
                     input(placeholder="메세지를 입력하세요", required, type="text")
                     button 전송
         script(src="/socket.io/socket.io.js")
         script(src="/public/js/chat.js")
+
