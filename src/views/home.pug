@@ -4,14 +4,15 @@ html(lang="ko")
         meta(charset="UTF-8")
         meta(http-equiv="X-UA-Compatible", content="IE=edge")
         meta(name="viewport", content="width=device-width, initial-scale=1.0")
-        title Co-delivery
+        title Home
         link(rel="stylesheet", href="https://unpkg.com/mvp.css")
     body 
         header
             h1 Co-delivery
         main
-            form#st
-                //input(placeholder="NickName", required, type="text")
-                button Start
+            div#start
+                form(action='/matchResult')#name
+                    input(placeholder="RoomName", required, type="text")
+                    button Start
         script(src="/socket.io/socket.io.js")
         script(src="/public/js/app.js")

@@ -1,22 +1,38 @@
 const socket = io();
 
-const start = document.getElementById("st");
-const start_button = start.querySelector("button");
+const start = document.getElementById("start");
+const nameForm = start.querySelector("#name");
 
 
 function handleNickname(event){
     event.preventDefault();
-    console.log('receive nickanem');
-}
-socket.on("nickname", handleNickname);
-
-function handleStart(event){
-    event.preventDefault();
-    
     console.log("# front : button clicked!");
-    let nickname = 'jin dongha';
-    window.location.replace(`http://localhost:3000/user/matchResult`); // page 이동
-    //socket.emit("userNickname", nickname);
+    const input = start.querySelector("#name input");
+    let name = input.value;
+    console.log(`input.value : ${name}`);
+    socket.emit("userNickname", name);
 }
-start_button.addEventListener("click", handleStart);
+
+nameForm.addEventListener("submit", handleNickname);
+
+
+
+// // POST -> nickname 받기
+// axios({
+//     mehtod: "post",
+//     url: "http://localhost:3000/matchResult",
+//     data:{
+//         // user1: user1.nickname,
+//         // user2: user2.nickname,
+//         name: nickname,
+//     },
+// })
+// .then(function(res){
+//     // console.log('user1 : ', user1.nickname, 'user2 : ',user2.nickname);
+//     console.log(res.body);
+//     // roomId = user1.nickname + " " + user2.nickname;
+// })
+// .catch(function(err){
+//     console.log('error in post /matchResult', err);
+// })
 
