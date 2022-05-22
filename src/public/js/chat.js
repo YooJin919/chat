@@ -16,10 +16,17 @@ function handleMessageSubmit(event){
     event.preventDefault();
     const input = chat.querySelector("#msg input");
     const value = input.value;
-    socket.emit("new_msg", input.value, roomId, ()=>{
+
+    let today = new Date();
+    let year = today.getFullYear(); // 년도
+    let month = today.getMonth() + 1;  // 월
+    let date = today.getDate();  // 날짜
+    //let day = today.getDay();  // 요일
+    let time = year+"-"+month+"-"+date;
+
+    socket.emit("new_msg", input.value, time, ()=>{
         addMessage(`You: ${value}`);
     }); 
-    console.log('# front : socket.rooms : ', socket.rooms);
     console.log("# front send msg to me : socket.emit : 'new_msg'");
     input.value ="";
 }

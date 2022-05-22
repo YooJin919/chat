@@ -11,6 +11,7 @@ function handleNickname(event){
     let name = input.value;
     console.log(`input.value : ${name}`);
     socket.emit("userNickname", name);    
+    window.location = 'http://localhost:3000/matchResult';
 }
 
 nameForm.addEventListener("submit", handleNickname);

@@ -28,6 +28,10 @@ app.get("/matchResult", (_, res)=>{
 })
 
 
+// AUTO_INCREMENT값 초기화
+// set @count=0;
+// update TABLE_NAME set 속성값=@count:=@count+1;
+
 // # Spring에서 request로 매칭된 사용자 2명의 nickname을 받고 오름차순으로 user1, user2 정의
 let user1 = {
     nickname: "",
@@ -66,17 +70,34 @@ wsServer.on("connection", (socket) => {
     });
 
     // new_msg : 나를 제외한 사람에게 msg 보냄
-    socket.on("new_msg", (msg, room, sendToMe)=>{
+    socket.on("new_msg", (msg, time, sendToMe)=>{
         socket.broadcast.emit("msg",`${socket.id}: ${msg}`);
+        set_msgTable(msg, time, socket.id, roomId);
         sendToMe();
         console.log('# server : socket.rooms : ', socket.rooms);
         console.log('# server : socket.id : ', socket.id);
-        console.log('# server send msg except me : socket.emit : "msg"', msg);
+        console.log('# server send msg except me : socket.emit : ', msg);
+        console.log(msg, time, socket.id, roomId);
     });
     // socket.emit("receiveMsg", msg); => 방에 있는 모든 사람한테 메세지 전송
     // socket.broadcast("receiveMsg", msg); => 메세지를 보낸 사람을 제외하고, 방에 있는 모든 사람한테 메세지 전송
 });
 
+const set_msgTable = async (msg, time, sender, roomId) => {
+    try{
+        let db = await mysql.createConnection({
+            host: "localhost",
+            user: "root",
+            port: "3306",
+            password: "password",
+            database: "test",
+        });
+        await db.query(`INSERT INTO ChatMessage (message, time, User_Id, room_id) VALUES('${msg}', '${time}', '${user1.Id}', '${roomId}')`);
+    }
+    catch(err){
+        console.log('err in set_msgTable', err);
+    }
+}
 
 // 매칭된 2명의 사용자 nickname 받기
 // user nickname으로 DB에서 userId 찾기
@@ -100,16 +121,22 @@ const get_user_info = async (req, res) => {
         }
         console.log('user1 : ', user1, ' user2 : ',user2);
 
-        // DB에 roomId 저장
+        // DB에 roomId 저장 // 중복된 roomId 존재하면 room 추가 X
         roomId = user1.nickname + " " + user2.nickname;
-
-        //await db.query(`DELETE FROM room`); // test를 위해 매번 테이블 초기화
         let [check] = await db.query('SELECT * FROM Room WHERE room_id=?',roomId);
         console.log(check);
         if(check.length!=0)
             console.log(`DB roomId : ${check[0].room_id}`);
         else{
             await db.query(`INSERT INTO room (room_id) VALUES('${roomId}');`);
+        }
+
+        // ChatRoomJoin DB에 매칭된 사용자 2명의 ID, Room Id 저장
+        let [chk] = await db.query('SELECT * FROM ChatRoomJoin WHERE Room_room_id=?',roomId);
+        if(chk.length!=0)
+            console.log('ChatRoomJoin : ',chk);
+        else{
+            await db.query(`INSERT INTO ChatRoomJoin (User_Id1, User_Id2, Room_room_id) VALUES('${user1.Id}', '${user2.Id}', '${roomId}')`);
         }
     } catch(err){
         console.log('err in get_user_info\n', err);
