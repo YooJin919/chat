@@ -11,8 +11,13 @@ html(lang="ko")
             h1 Co-delivery
         main
             div#start
-                form#name
+                form#roomname
                     input(placeholder="RoomName", required, type="text")
                     button Start
+            div#chat
+                ul
+                form#msg
+                    input(placeholder="메세지를 입력하세요", required, type="text")
+                    button 전송
         script(src="/socket.io/socket.io.js")
         script(src="/public/js/app.js")

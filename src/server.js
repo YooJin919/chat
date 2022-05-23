@@ -45,42 +45,41 @@ let user2 = {
 // Socket room을 만드는 Id = 사용자 2명의 nickname
 let roomId = '';
 
-
 wsServer.on("connection", (socket) => {
+    console.log(socket.id);
     console.log("Connected to Web Socket Server!");
 
     // 매칭된 사용자 nickname으로 Room 생성하기
-    socket.on("userNickname", (nickname)=>{
+    socket.on("RoomName", (room)=>{
         console.log('# server : enterRoom!');
         // front에서 보내준 nickname으로 roomId 설정
-        roomId = nickname;
-        console.log('roomId : ',roomId);
+        console.log('roomId : ',room);
 
         // 설정한 roomId로 Room 생성
-        console.log('socker.id : ',socket.id);
+        console.log('socket.id : ',socket.id);
         console.log('socket.rooms (before join) : ',socket.rooms);
-        socket.join(roomId); // room 생성
+        socket.join(room); // room 생성
         console.log('socket.rooms (after join) : ',socket.rooms);
 
-        let user = nickname.split(" ");
+        let user = room.split(" ");
         user1.nickname = user[0];
         user2.nickname = user[1];
-        console.log('user : ',user);
         get_user_info();
     });
 
     // new_msg : 나를 제외한 사람에게 msg 보냄
-    socket.on("new_msg", (msg, time, sendToMe)=>{
-        socket.broadcast.emit("msg",`${socket.id}: ${msg}`);
-        set_msgTable(msg, time, socket.id, roomId);
+    socket.on("new_msg", (msg, room, time, sendToMe)=>{
+        //socket.broadcast.emit("msg",`${socket.id}: ${msg}`);
+        socket.to(room).emit("msg",`${socket.id}: ${msg}`);
+        set_msgTable(msg, time, user1.Id, room);
         sendToMe();
         console.log('# server : socket.rooms : ', socket.rooms);
         console.log('# server : socket.id : ', socket.id);
         console.log('# server send msg except me : socket.emit : ', msg);
-        console.log(msg, time, socket.id, roomId);
+        console.log(msg, time, socket.id, room);
     });
     // socket.emit("receiveMsg", msg); => 방에 있는 모든 사람한테 메세지 전송
-    // socket.broadcast("receiveMsg", msg); => 메세지를 보낸 사람을 제외하고, 방에 있는 모든 사람한테 메세지 전송
+    // socket.broadcast.emit("receiveMsg", msg); => 메세지를 보낸 사람을 제외하고, 방에 있는 모든 사람한테 메세지 전송
 });
 
 const set_msgTable = async (msg, time, sender, roomId) => {
