@@ -97,13 +97,10 @@ wsServer.on("connection", (socket) => {
             });
             let [hist] = await db
             .query(`SELECT * FROM chatmessage WHERE room_id='${room}'`);
-            hist.forEach(function(hist){
-                socket.emit("ShowHistory", hist.message, hist.User_Id);
-            });
+            socket.emit("ShowHistory", hist);
         } catch(err){
             console.log('err in showHistory\n', err);
         }
-    
     };
 });
 

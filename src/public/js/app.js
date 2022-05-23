@@ -57,11 +57,13 @@ function handleMessageSubmit(event){
 }
 
 msgForm.addEventListener("submit", handleMessageSubmit);
+
 socket.on("msg", addMessage);
 
-socket.on("ShowHistory", (msg, Id)=>{
-    console.log('# front : ',msg, Id);
-    addMessage(`${Id}: ${msg}`);
+socket.on("ShowHistory", (hist)=>{
+    hist.forEach(function(hist){
+        addMessage(`${hist.User_Id}: ${hist.message}`);
+    })
 });
 
 // POST -> nickname 받기
