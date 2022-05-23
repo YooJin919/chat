@@ -42,6 +42,8 @@ let user2 = {
     Id: "",
 };
 
+
+
 // Socket room을 만드는 Id = 사용자 2명의 nickname
 let roomId = '';
 
@@ -50,7 +52,7 @@ wsServer.on("connection", (socket) => {
     console.log("Connected to Web Socket Server!");
 
     // 매칭된 사용자 nickname으로 Room 생성하기
-    socket.on("RoomName", (room)=>{
+    socket.on("RoomName", async (room)=>{
         console.log('# server : enterRoom!');
         // front에서 보내준 nickname으로 roomId 설정
         console.log('roomId : ',room);
@@ -64,7 +66,10 @@ wsServer.on("connection", (socket) => {
         let user = room.split(" ");
         user1.nickname = user[0];
         user2.nickname = user[1];
-        get_user_info();
+        await get_user_info();
+
+        await showHistory(room);
+
     });
 
     // new_msg : 나를 제외한 사람에게 msg 보냄
@@ -80,6 +85,26 @@ wsServer.on("connection", (socket) => {
     });
     // socket.emit("receiveMsg", msg); => 방에 있는 모든 사람한테 메세지 전송
     // socket.broadcast.emit("receiveMsg", msg); => 메세지를 보낸 사람을 제외하고, 방에 있는 모든 사람한테 메세지 전송
+
+    const showHistory = async (room) => {
+        try {
+            let db = await mysql.createConnection({
+                host: "localhost",
+                user: "root",
+                port: "3306",
+                password: "password",
+                database: "test",
+            });
+            let [hist] = await db
+            .query(`SELECT * FROM chatmessage WHERE room_id='${room}'`);
+            hist.forEach(function(hist){
+                socket.emit("ShowHistory", hist.message, hist.User_Id);
+            });
+        } catch(err){
+            console.log('err in showHistory\n', err);
+        }
+    
+    };
 });
 
 const set_msgTable = async (msg, time, sender, roomId) => {

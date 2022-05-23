@@ -59,6 +59,11 @@ function handleMessageSubmit(event){
 msgForm.addEventListener("submit", handleMessageSubmit);
 socket.on("msg", addMessage);
 
+socket.on("ShowHistory", (msg, Id)=>{
+    console.log('# front : ',msg, Id);
+    addMessage(`${Id}: ${msg}`);
+});
+
 // POST -> nickname 받기
 // axios({
 //     mehtod: "post",
