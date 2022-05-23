@@ -2,6 +2,8 @@ const socket = io();
 
 const start = document.getElementById("start");
 const RoomNameForm = start.querySelector("#roomname");
+const ChatDiv = document.getElementById("chat");
+ChatDiv.hidden = true;
 
 let roomId = '';
 
@@ -13,6 +15,8 @@ function handleRoomName(event){
     console.log(`input.value : ${roomId}`);
     socket.emit("RoomName", roomId);
     input.value="";
+    ChatDiv.hidden = false;
+    start.hidden=true;
 }
 
 RoomNameForm.addEventListener("submit", handleRoomName);
