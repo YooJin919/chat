@@ -72,6 +72,11 @@ wsServer.on("connection", (socket) => {
 
     });
 
+    // mobile에서 매칭된 사용자와 방정보 받기
+    socket.on("Mobile", (user, roomId)=>{
+        console.log(user, roomId);
+    })
+
     // new_msg : 나를 제외한 사람에게 msg 보냄
     socket.on("new_msg", (msg, room, time, sendToMe)=>{
         //socket.broadcast.emit("msg",`${socket.id}: ${msg}`);

@@ -5,27 +5,40 @@ const RoomNameForm = start.querySelector("#roomname");
 const ChatDiv = document.getElementById("chat");
 ChatDiv.hidden = true;
 
-let roomId = '';
+let roomId = "";
+let user = "";
+
+roomId = window.localStorage.getItem('roomId');
+user = window.localStorage.getItem('user');
+
+socket.emit("Mobile", user, roomId);
 
 function handleRoomName(event){
     event.preventDefault();
     console.log("# front : button clicked!");
-    const input = start.querySelector("#roomname input");
-    roomId = input.value;
-    console.log(`input.value : ${roomId}`);
-    socket.emit("RoomName", roomId);
-    input.value="";
+    // const input = start.querySelector("#roomname input");
+    // roomId = input.value;
+    // console.log(`input.value : ${roomId}`);
+    // socket.emit("RoomName", roomId);
+    // input.value="";
     ChatDiv.hidden = false;
     start.hidden=true;
+    //console.log(user, roomId);
 }
 
 RoomNameForm.addEventListener("submit", handleRoomName);
+
 
 // const socket = io();
 
 const chat = document.getElementById("chat");
 const msgForm = chat.querySelector("#msg");
 
+// function getMatchResult(username, RoomName){
+//     user = username;
+//     roomId = RoomName;
+//     console.log(`user : ${user}, roomname : ${roomId}`);
+// }
 
 
 function addMessage(msg){
@@ -44,9 +57,9 @@ function handleMessageSubmit(event){
     let year = today.getFullYear(); // 년도
     let month = today.getMonth() + 1;  // 월
     let date = today.getDate();  // 날짜
-    let hours = today.getHours(); // 시
-    let minutes = today.getMinutes();  // 분
-    let seconds = today.getSeconds();  // 초
+    let hours = today.getHours().padStart(2,"0"); // 시
+    let minutes = today.getMinutes().padStart(2,"0");  // 분
+    let seconds = today.getSeconds().padStart(2,"0");  // 초
     let time = `${year}-${month}-${date} ${hours}:${minutes}:${seconds}`;
 
     socket.emit("new_msg", input.value, roomId, time, ()=>{

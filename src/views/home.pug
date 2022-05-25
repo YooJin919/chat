@@ -5,14 +5,26 @@ html(lang="ko")
         meta(http-equiv="X-UA-Compatible", content="IE=edge")
         meta(name="viewport", content="width=device-width, initial-scale=1.0")
         title Home
-        link(rel="stylesheet", href="https://unpkg.com/mvp.css")
+        //link(rel="stylesheet", href="https://unpkg.com/mvp.css")
+        
     body 
+        script(type='text/javascript').
+            console.log('start');
+            //window.localStorage.setItem('jin', 'hi');
+            async function getMatchResult(username, RoomName){
+                let user = username;
+                let roomId = RoomName;
+                await window.localStorage.setItem('user', user);
+                await window.localStorage.setItem('roomId', roomId);
+                console.log(`user : ${user}, roomname : ${roomId}`);
+                alert(`${user}, ${roomId}`);
+            };
         header
             h1 Co-delivery
         main
             div#start
                 form#roomname
-                    input(placeholder="RoomName", required, type="text")
+                    input(placeholder="RoomName", type="text")
                     button Start
             div#chat
                 ul
