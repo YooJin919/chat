@@ -5,27 +5,25 @@ const RoomNameForm = start.querySelector("#roomname");
 const ChatDiv = document.getElementById("chat");
 ChatDiv.hidden = true;
 
-let roomId = "";
-let user = "";
-
-roomId = window.localStorage.getItem('roomId');
-user = window.localStorage.getItem('user');
-
-socket.emit("Mobile", user, roomId);
+// ## flutter에서 받아오는 정보
+// let roomId = "";
+// let user = "";
+// roomId = window.localStorage.getItem('roomId');
+// user = window.localStorage.getItem('user');
+// ## dummy data로 test
+let roomId = 'dongha jin';
+let user = 'dongha';
 
 function handleRoomName(event){
     event.preventDefault();
     console.log("# front : button clicked!");
-    // const input = start.querySelector("#roomname input");
-    // roomId = input.value;
-    // console.log(`input.value : ${roomId}`);
-    // socket.emit("RoomName", roomId);
-    // input.value="";
+
     ChatDiv.hidden = false;
     start.hidden=true;
-    //console.log(user, roomId);
-}
 
+    socket.emit("makeRoom", user, roomId); 
+    // flutter에서 받은 user name과 roomId -> server에 보내기
+}
 RoomNameForm.addEventListener("submit", handleRoomName);
 
 
@@ -54,12 +52,11 @@ function handleMessageSubmit(event){
     const value = input.value;
 
     let today = new Date();
-    let year = today.getFullYear(); // 년도
-    let month = today.getMonth() + 1;  // 월
-    let date = today.getDate();  // 날짜
-    let hours = today.getHours().padStart(2,"0"); // 시
-    let minutes = today.getMinutes().padStart(2,"0");  // 분
-    let seconds = today.getSeconds().padStart(2,"0");  // 초
+    let month = ('0' + (today.getMonth() + 1)).slice(-2);
+    let date = ('0' + today.getDate()).slice(-2);
+    let hours = ('0' + today.getHours()).slice(-2); 
+    let minutes = ('0' + today.getMinutes()).slice(-2);
+    let seconds = ('0' + today.getSeconds()).slice(-2);
     let time = `${year}-${month}-${date} ${hours}:${minutes}:${seconds}`;
 
     socket.emit("new_msg", input.value, roomId, time, ()=>{

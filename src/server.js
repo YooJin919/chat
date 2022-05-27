@@ -32,56 +32,56 @@ app.get("/matchResult", (_, res)=>{
 // set @count=0;
 // update TABLE_NAME set 속성값=@count:=@count+1;
 
-// # Spring에서 request로 매칭된 사용자 2명의 nickname을 받고 오름차순으로 user1, user2 정의
-let user1 = {
+
+// 사용자, 상대방 정보
+let user = {
     nickname: "",
     Id: "",
 };
-let user2 = {
+let partner = {
     nickname: "",
     Id: "",
 };
-
-
-
 // Socket room을 만드는 Id = 사용자 2명의 nickname
 let roomId = '';
 
+
+// socket server 연결
 wsServer.on("connection", (socket) => {
     console.log(socket.id);
     console.log("Connected to Web Socket Server!");
 
-    // 매칭된 사용자 nickname으로 Room 생성하기
-    socket.on("RoomName", async (room)=>{
-        console.log('# server : enterRoom!');
-        // front에서 보내준 nickname으로 roomId 설정
-        console.log('roomId : ',room);
+    // mobile에서 매칭된 사용자와 방정보 받기
+    socket.on("makeRoom", async (username, room)=>{
+        console.log(username, room);
+        
+        // user, partner nickname 설정
+        let u = room.split(" ");
+        if(u[0]==username){
+            user.nickname = u[0];
+            partner.nickname = u[1];
+        } else{
+            user.nickname = u[1];
+            partner.nickname = u[0];
+        }
+        console.log(`user : ${user.nickname}, partner : ${partner.nickname}`);
+        roomId = room; // roomId 설정
 
-        // 설정한 roomId로 Room 생성
         console.log('socket.id : ',socket.id);
         console.log('socket.rooms (before join) : ',socket.rooms);
-        socket.join(room); // room 생성
+        socket.join(roomId); // room 생성
         console.log('socket.rooms (after join) : ',socket.rooms);
 
-        let user = room.split(" ");
-        user1.nickname = user[0];
-        user2.nickname = user[1];
         await get_user_info();
 
-        await showHistory(room);
-
-    });
-
-    // mobile에서 매칭된 사용자와 방정보 받기
-    socket.on("Mobile", (user, roomId)=>{
-        console.log(user, roomId);
+        await showHistory(roomId);
     })
 
     // new_msg : 나를 제외한 사람에게 msg 보냄
     socket.on("new_msg", (msg, room, time, sendToMe)=>{
         //socket.broadcast.emit("msg",`${socket.id}: ${msg}`);
         socket.to(room).emit("msg",`${socket.id}: ${msg}`);
-        set_msgTable(msg, time, user1.Id, room);
+        set_msgTable(msg, time, user.Id, room);
         sendToMe();
         console.log('# server : socket.rooms : ', socket.rooms);
         console.log('# server : socket.id : ', socket.id);
@@ -101,7 +101,7 @@ wsServer.on("connection", (socket) => {
                 database: "test",
             });
             let [hist] = await db
-            .query(`SELECT * FROM chatmessage WHERE room_id='${room}'`);
+            .query(`SELECT * FROM ChatMessage WHERE room_id='${room}'`);
             socket.emit("ShowHistory", hist);
         } catch(err){
             console.log('err in showHistory\n', err);
@@ -118,7 +118,7 @@ const set_msgTable = async (msg, time, sender, roomId) => {
             password: "password",
             database: "test",
         });
-        await db.query(`INSERT INTO ChatMessage (message, time, User_Id, room_id) VALUES('${msg}', '${time}', '${user1.Id}', '${roomId}')`);
+        await db.query(`INSERT INTO ChatMessage (message, time, User_Id, room_id) VALUES('${msg}', '${time}', '${user.Id}', '${roomId}')`);
     }
     catch(err){
         console.log('err in set_msgTable', err);
@@ -137,32 +137,32 @@ const get_user_info = async (req, res) => {
             database: "test",
         });
         // user nickname으로 DB에서 user_Id 가져오기
-        let [us] = await db.query(`SELECT * FROM user WHERE user.nickname='${user1.nickname}' or user.nickname='${user2.nickname}'`);
-        if(us[0].nickname==user1.nickname){
-            user1.Id = us[0].Id;
-            user2.Id = us[1].Id;
+        let [us] = await db.query(`SELECT * FROM User WHERE User.nickname='${user.nickname}' or User.nickname='${partner.nickname}'`);
+        if(us[0].nickname==user.nickname){
+            user.Id = us[0].Id;
+            partner.Id = us[1].Id;
         } else{
-            user1.Id = us[1].Id;
-            user2.Id = us[0].Id;
+            user.Id = us[1].Id;
+            partner.Id = us[0].Id;
         }
-        console.log('user1 : ', user1, ' user2 : ',user2);
+        console.log('user : ', user, ' partner : ',partner);
 
         // DB에 roomId 저장 // 중복된 roomId 존재하면 room 추가 X
-        roomId = user1.nickname + " " + user2.nickname;
+        roomId = user.nickname + " " + partner.nickname;
         let [check] = await db.query('SELECT * FROM Room WHERE room_id=?',roomId);
         console.log(check);
         if(check.length!=0)
             console.log(`DB roomId : ${check[0].room_id}`);
         else{
-            await db.query(`INSERT INTO room (room_id) VALUES('${roomId}');`);
+            await db.query(`INSERT INTO Room (room_id) VALUES('${roomId}');`);
         }
 
         // ChatRoomJoin DB에 매칭된 사용자 2명의 ID, Room Id 저장
-        let [chk] = await db.query('SELECT * FROM ChatRoomJoin WHERE Room_room_id=?',roomId);
+        let [chk] = await db.query('SELECT * FROM ChatRoomJoin WHERE room_id=?',roomId);
         if(chk.length!=0)
             console.log('ChatRoomJoin : ',chk);
         else{
-            await db.query(`INSERT INTO ChatRoomJoin (User_Id1, User_Id2, Room_room_id) VALUES('${user1.Id}', '${user2.Id}', '${roomId}')`);
+            await db.query(`INSERT INTO ChatRoomJoin (User_Id1, User_Id2, room_id) VALUES('${user.Id}', '${partner.Id}', '${roomId}')`);
         }
     } catch(err){
         console.log('err in get_user_info\n', err);
@@ -174,8 +174,8 @@ const get_user_info = async (req, res) => {
 // http://3.39.141.110:8080/user/nickname
 
 // res.body = {
-//     "user1" : "nickname",
-//     "user2" : "nickname"
+//     "user" : "nickname",
+//     "partner" : "nickname"
 // }
 
 // // POST -> nickname 받기
@@ -183,14 +183,14 @@ const get_user_info = async (req, res) => {
 //     mehtod: "post",
 //     url: "http://localhost:3000/",
 //     data:{
-//         user1: user1.nickname,
-//         user2: user2.nickname,
+//         user: user.nickname,
+//         partner: partner.nickname,
 //     },
 // })
 // .then(function(res){
-//     console.log('user1 : ', user1.nickname, 'user2 : ',user2.nickname);
+//     console.log('user : ', user.nickname, 'partner : ',partner.nickname);
 //     console.log(res.body);
-//     roomId = user1.nickname + " " + user2.nickname;
+//     roomId = user.nickname + " " + partner.nickname;
 //     get_user_info();
 //     createRoom(roomId); // 채팅방 생성
 // })
