@@ -4,6 +4,7 @@ const start = document.getElementById("start");
 const RoomNameForm = start.querySelector("#roomname");
 const ChatDiv = document.getElementById("chat");
 ChatDiv.hidden = true;
+const UserNum = ChatDiv.querySelector("#num");
 
 // ## flutter에서 받아오는 정보
 // let roomId = "";
@@ -46,12 +47,20 @@ function addMessage(msg){
     ul.appendChild(li);
 }
 
+function addNum(number){
+    const p = chat.querySelector("p");
+    const h3 = document.createElement("h3");
+    h3.innerText = number;
+    p.appendChild(h3);
+}
+
 function handleMessageSubmit(event){
     event.preventDefault();
     const input = chat.querySelector("#msg input");
     const value = input.value;
 
     let today = new Date();
+    let year = today.getFullYear();
     let month = ('0' + (today.getMonth() + 1)).slice(-2);
     let date = ('0' + today.getDate()).slice(-2);
     let hours = ('0' + today.getHours()).slice(-2); 
@@ -69,6 +78,10 @@ function handleMessageSubmit(event){
 msgForm.addEventListener("submit", handleMessageSubmit);
 
 socket.on("msg", addMessage);
+
+socket.on("bye", (left_user)=>{
+    addMessage(`상대방이 채팅방을 나갔습니다.`);
+});
 
 socket.on("ShowHistory", (hist)=>{
     hist.forEach(function(hist){

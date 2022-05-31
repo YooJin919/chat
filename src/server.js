@@ -32,6 +32,7 @@ app.get("/matchResult", (_, res)=>{
 // set @count=0;
 // update TABLE_NAME set 속성값=@count:=@count+1;
 
+let clientNum = 0;
 
 // 사용자, 상대방 정보
 let user = {
@@ -45,11 +46,61 @@ let partner = {
 // Socket room을 만드는 Id = 사용자 2명의 nickname
 let roomId = '';
 
+wsServer.on("disconnect", (reason)=>{
+    console.log(reason);
+    console.log('socket disconneted!');
+    socket.emit('close');
+})
+
+function countUserNum(room){
+    return wsServer.sockets.rooms.get(room).size;
+}
+
+const RemoveRoom = async (room) => {
+    try {
+        let db = await mysql.createConnection({
+            host: "localhost",
+            user: "root",
+            port: "3306",
+            password: "password",
+            database: "test",
+        });
+        await db
+        .query(`DELETE from Room WHERE room_id='${room}'`);
+    } catch(err){
+        console.log('error in RemoveRoom');
+        console.log(err);
+    }
+}
+
+
 
 // socket server 연결
 wsServer.on("connection", (socket) => {
     console.log(socket.id);
     console.log("Connected to Web Socket Server!");
+
+    socket.on("connect_error", () => {
+        console.log('connecting error !!');
+        setTimeout(() => {
+            socket.connect();
+        }, 1000);
+    });
+
+    socket.on("disconnecting", ()=>{
+        clientNum = wsServer.sockets.adapter.rooms.get(roomId).size;
+        console.log('the number of client in this room : ',clientNum-1);
+
+        socket.rooms.forEach(room => {
+            socket.to(room).emit("bye");
+        });
+        
+        // 채팅방에 사용자가 0명이면, Room 삭제 & DB에서 관련 정보 삭제
+        if((clientNum-1)===0){
+            RemoveRoom(roomId);
+        }
+            
+    })
 
     // mobile에서 매칭된 사용자와 방정보 받기
     socket.on("makeRoom", async (username, room)=>{
@@ -71,6 +122,8 @@ wsServer.on("connection", (socket) => {
         console.log('socket.rooms (before join) : ',socket.rooms);
         socket.join(roomId); // room 생성
         console.log('socket.rooms (after join) : ',socket.rooms);
+        clientNum = wsServer.sockets.adapter.rooms.get(roomId).size;
+        console.log('the number of client in this room: ',clientNum);
 
         await get_user_info();
 
