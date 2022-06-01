@@ -53,7 +53,8 @@ wsServer.on("disconnect", (reason)=>{
 })
 
 function countUserNum(room){
-    return wsServer.sockets.rooms.get(room).size;
+    let num = wsServer.sockets.adapter.rooms.get(room)?.size;
+    return num;
 }
 
 const RemoveRoom = async (room) => {
@@ -82,13 +83,17 @@ wsServer.on("connection", (socket) => {
 
     socket.on("connect_error", () => {
         console.log('connecting error !!');
-        setTimeout(() => {
-            socket.connect();
-        }, 1000);
     });
 
+    socket.on("disconnect", (reason) => {
+        if (reason === "transport error") {
+            console.log('Network ERROR');
+            console.log(reason);
+        }
+    }); 
+
     socket.on("disconnecting", ()=>{
-        clientNum = wsServer.sockets.adapter.rooms.get(roomId).size;
+        clientNum = countUserNum(roomId);
         console.log('the number of client in this room : ',clientNum-1);
 
         socket.rooms.forEach(room => {
@@ -122,7 +127,7 @@ wsServer.on("connection", (socket) => {
         console.log('socket.rooms (before join) : ',socket.rooms);
         socket.join(roomId); // room 생성
         console.log('socket.rooms (after join) : ',socket.rooms);
-        clientNum = wsServer.sockets.adapter.rooms.get(roomId).size;
+        clientNum = countUserNum(roomId);
         console.log('the number of client in this room: ',clientNum);
 
         await get_user_info();
@@ -132,14 +137,28 @@ wsServer.on("connection", (socket) => {
 
     // new_msg : 나를 제외한 사람에게 msg 보냄
     socket.on("new_msg", (msg, room, time, sendToMe)=>{
-        //socket.broadcast.emit("msg",`${socket.id}: ${msg}`);
-        socket.to(room).emit("msg",`${socket.id}: ${msg}`);
-        set_msgTable(msg, time, user.Id, room);
-        sendToMe();
-        console.log('# server : socket.rooms : ', socket.rooms);
-        console.log('# server : socket.id : ', socket.id);
-        console.log('# server send msg except me : socket.emit : ', msg);
-        console.log(msg, time, socket.id, room);
+        if(countUserNum(roomId)===1)
+            socket.emit("NoUser");
+        else{
+            //socket.broadcast.emit("msg",`${socket.id}: ${msg}`);
+            socket.to(room).emit("msg",`${socket.id}: ${msg}`);
+
+            // 시간 제한
+            socket.timeout(5000).emit("overTime", (err) => {
+                if (err) {
+                    // the other side did not acknowledge the event in the given delay
+                    console.log(err);
+                }
+            });
+
+            set_msgTable(msg, time, user.Id, room);
+            sendToMe();
+            console.log('# server : socket.rooms : ', socket.rooms);
+            console.log('# server : socket.id : ', socket.id);
+            console.log('# server send msg except me : socket.emit : ', msg);
+            console.log(msg, time, user.Id, room);
+        }
+        
     });
     // socket.emit("receiveMsg", msg); => 방에 있는 모든 사람한테 메세지 전송
     // socket.broadcast.emit("receiveMsg", msg); => 메세지를 보낸 사람을 제외하고, 방에 있는 모든 사람한테 메세지 전송
@@ -221,36 +240,6 @@ const get_user_info = async (req, res) => {
         console.log('err in get_user_info\n', err);
     }
 }
-
-
-
-// http://3.39.141.110:8080/user/nickname
-
-// res.body = {
-//     "user" : "nickname",
-//     "partner" : "nickname"
-// }
-
-// // POST -> nickname 받기
-// axios({
-//     mehtod: "post",
-//     url: "http://localhost:3000/",
-//     data:{
-//         user: user.nickname,
-//         partner: partner.nickname,
-//     },
-// })
-// .then(function(res){
-//     console.log('user : ', user.nickname, 'partner : ',partner.nickname);
-//     console.log(res.body);
-//     roomId = user.nickname + " " + partner.nickname;
-//     get_user_info();
-//     createRoom(roomId); // 채팅방 생성
-// })
-// .catch(function(err){
-//     console.log('error in post /matchResult', err);
-// })
-
 
 const handleListen = () => {
     console.log(`Listening on http://localhost:3000`);

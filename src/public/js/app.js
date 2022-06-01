@@ -79,6 +79,10 @@ msgForm.addEventListener("submit", handleMessageSubmit);
 
 socket.on("msg", addMessage);
 
+socket.on("NoUser",()=>{
+    alert('상대방이 없습니다.');
+})
+
 socket.on("bye", (left_user)=>{
     addMessage(`상대방이 채팅방을 나갔습니다.`);
 });
