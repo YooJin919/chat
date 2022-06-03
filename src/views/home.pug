@@ -5,8 +5,12 @@ html(lang="ko")
         meta(http-equiv="X-UA-Compatible", content="IE=edge")
         meta(name="viewport", content="width=device-width, initial-scale=1.0")
         title Home
-        //link(rel="stylesheet", href="https://unpkg.com/mvp.css")
-        
+        //link(rel="stylesheet" href = "../src/views/style.css")
+    style
+        include style.css
+
+    header
+        //h1 Co-delivery
     body 
         script(type='text/javascript').
             console.log('start');
@@ -19,17 +23,16 @@ html(lang="ko")
                 console.log(`user : ${user}, roomname : ${roomId}`);
                 alert(`${user}, ${roomId}`);
             };
-        header
-            h1 Co-delivery
+
         main
-            div#start
-                form#roomname
-                    button Start
+            div#newchat
+                p#num
+                    ul
             div#chat
                 p#num
                 ul
                 form#msg
                     input(placeholder="메세지를 입력하세요", required, type="text")
-                    button 전송
+                    button <
         script(src="/socket.io/socket.io.js")
         script(src="/public/js/app.js")

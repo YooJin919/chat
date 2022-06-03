@@ -46,6 +46,8 @@ let partner = {
 // Socket room을 만드는 Id = 사용자 2명의 nickname
 let roomId = '';
 
+
+
 wsServer.on("disconnect", (reason)=>{
     console.log(reason);
     console.log('socket disconneted!');
@@ -135,30 +137,29 @@ wsServer.on("connection", (socket) => {
         await showHistory(roomId);
     })
 
+    // 시간 제한
+    // socket.timeout(5000).emit("overTime", (err) => {
+    //     if (err) {
+    //         // the other side did not acknowledge the event in the given delay
+    //         console.log(err);
+    //     }
+    // });
+
     // new_msg : 나를 제외한 사람에게 msg 보냄
     socket.on("new_msg", (msg, room, time, sendToMe)=>{
         if(countUserNum(roomId)===1)
             socket.emit("NoUser");
         else{
             //socket.broadcast.emit("msg",`${socket.id}: ${msg}`);
-            socket.to(room).emit("msg",`${socket.id}: ${msg}`);
-
-            // 시간 제한
-            socket.timeout(5000).emit("overTime", (err) => {
-                if (err) {
-                    // the other side did not acknowledge the event in the given delay
-                    console.log(err);
-                }
-            });
-
+            socket.to(room).emit("msg",`${partner.nickname}: ${msg}`);
+            socket.to(room).emit("time",`${time}`);
             set_msgTable(msg, time, user.Id, room);
             sendToMe();
             console.log('# server : socket.rooms : ', socket.rooms);
             console.log('# server : socket.id : ', socket.id);
             console.log('# server send msg except me : socket.emit : ', msg);
-            console.log(msg, time, user.Id, room);
+            console.log(msg, time, socket.id, room);
         }
-        
     });
     // socket.emit("receiveMsg", msg); => 방에 있는 모든 사람한테 메세지 전송
     // socket.broadcast.emit("receiveMsg", msg); => 메세지를 보낸 사람을 제외하고, 방에 있는 모든 사람한테 메세지 전송
@@ -174,7 +175,31 @@ wsServer.on("connection", (socket) => {
             });
             let [hist] = await db
             .query(`SELECT * FROM ChatMessage WHERE room_id='${room}'`);
-            socket.emit("ShowHistory", hist);
+
+            hist.forEach(function(hist){
+
+                let timest = new Date(hist.time);
+                console.log(time);
+                console.log(typeof(hist.time.toString()));
+
+                let year = timest.getFullYear();
+                let month = ('0' + (timest.getMonth() + 1)).slice(-2);
+                let date = ('0' + timest.getDate()).slice(-2);
+                let hours = ('0' + timest.getHours()).slice(-2); 
+                let minutes = ('0' + timest.getMinutes()).slice(-2);
+                let seconds = ('0' + timest.getSeconds()).slice(-2);
+                let time = `${year}-${month}-${date} ${hours}:${minutes}:${seconds}`;
+                
+                // room_id 에서 내가 아닌 것 = 상대방
+                if(hist.User_Id==user.Id)
+                    socket.emit("ShowHistory", hist.message, time);
+                else{
+                    socket.to(room).emit("msg",`${partner.nickname}: ${hist.message}`);
+                    socket.to(room).emit("time",`${time}`);
+                }
+            });
+
+
         } catch(err){
             console.log('err in showHistory\n', err);
         }
@@ -191,6 +216,7 @@ const set_msgTable = async (msg, time, sender, roomId) => {
             database: "test",
         });
         await db.query(`INSERT INTO ChatMessage (message, time, User_Id, room_id) VALUES('${msg}', '${time}', '${user.Id}', '${roomId}')`);
+        
     }
     catch(err){
         console.log('err in set_msgTable', err);

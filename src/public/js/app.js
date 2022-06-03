@@ -1,7 +1,5 @@
 const socket = io();
 
-const start = document.getElementById("start");
-const RoomNameForm = start.querySelector("#roomname");
 const ChatDiv = document.getElementById("chat");
 ChatDiv.hidden = true;
 const UserNum = ChatDiv.querySelector("#num");
@@ -11,47 +9,54 @@ const UserNum = ChatDiv.querySelector("#num");
 // let user = "";
 // roomId = window.localStorage.getItem('roomId');
 // user = window.localStorage.getItem('user');
+
+
 // ## dummy data로 test
 let roomId = 'dongha jin';
 let user = 'dongha';
-
-function handleRoomName(event){
-    event.preventDefault();
-    console.log("# front : button clicked!");
-
-    ChatDiv.hidden = false;
-    start.hidden=true;
-
-    socket.emit("makeRoom", user, roomId); 
-    // flutter에서 받은 user name과 roomId -> server에 보내기
-}
-RoomNameForm.addEventListener("submit", handleRoomName);
-
+socket.emit("makeRoom", user, roomId); 
 
 // const socket = io();
-
+const newchat = document.getElementById("newchat");
 const chat = document.getElementById("chat");
 const msgForm = chat.querySelector("#msg");
 
-// function getMatchResult(username, RoomName){
-//     user = username;
-//     roomId = RoomName;
-//     console.log(`user : ${user}, roomname : ${roomId}`);
-// }
-
-
 function addMessage(msg){
-    const ul = chat.querySelector("ul");
+    const ul = newchat.querySelector("ul");
     const li = document.createElement("li");
+    li.id = "message";
+    li.className = 'sent';
     li.innerText = msg;
     ul.appendChild(li);
 }
 
-function addNum(number){
-    const p = chat.querySelector("p");
-    const h3 = document.createElement("h3");
-    h3.innerText = number;
-    p.appendChild(h3);
+function addNum(number){    
+    const ul = newchat.querySelector("ul");
+    const li = document.createElement("li");
+    li.id = "time";
+    li.className = 'sent';
+    li.innerText = number;
+    ul.appendChild(li);
+    newchat.scrollTo(0, newchat.scrollHeight);
+}
+
+function addMessage_receive(msg){
+    const ul = newchat.querySelector("ul");
+    const li = document.createElement("li");
+    li.id = "message";
+    li.className = "receive";
+    li.innerText = msg;
+    ul.appendChild(li);
+}
+
+function addNum_receive(number){    
+    const ul = newchat.querySelector("ul");
+    const li = document.createElement("li");
+    li.id = "time";
+    li.className = "receive";
+    li.innerText = number;
+    ul.appendChild(li);
+    newchat.scrollTo(0, newchat.scrollHeight);
 }
 
 function handleMessageSubmit(event){
@@ -70,6 +75,7 @@ function handleMessageSubmit(event){
 
     socket.emit("new_msg", input.value, roomId, time, ()=>{
         addMessage(`You: ${value}`);
+        addNum(`${time}`);
     }); 
     console.log("# front send msg to me : socket.emit : 'new_msg'");
     input.value ="";
@@ -77,18 +83,18 @@ function handleMessageSubmit(event){
 
 msgForm.addEventListener("submit", handleMessageSubmit);
 
-socket.on("msg", addMessage);
+socket.on("msg", addMessage_receive);//상대가 보낸 메세지
+socket.on("time", addNum_receive);
 
 socket.on("NoUser",()=>{
-    alert('상대방이 없습니다.');
+    addMessage_receive(`상대방이 없습니다.`);
 })
 
 socket.on("bye", (left_user)=>{
-    addMessage(`상대방이 채팅방을 나갔습니다.`);
+    addMessage_receive(`상대방이 채팅방을 나갔습니다.`);
 });
 
-socket.on("ShowHistory", (hist)=>{
-    hist.forEach(function(hist){
-        addMessage(`${hist.User_Id}: ${hist.message}`);
-    })
+socket.on("ShowHistory", (value, time)=>{
+    addMessage(`You: ${value}`);
+    addNum(`${time}`);
 });
