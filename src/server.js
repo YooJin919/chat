@@ -26,6 +26,10 @@ app.get("/", (_, res)=>{
     res.render("home"); // home.pug rendering중
 })
 
+// DB Connect
+const config = require('./config.json');
+//const database = require('./db_connect.js');
+
 // AUTO_INCREMENT값 초기화
 // set @count=0;
 // update TABLE_NAME set 속성값=@count:=@count+1;
@@ -61,11 +65,11 @@ function countUserNum(room){
 const RemoveRoom = async (room) => {
     try {
         let db = await mysql.createConnection({
-            host: "localhost",
-            user: "root",
-            port: "3306",
-            password: "password",
-            database: "test",
+            host: config.host,
+            port: config.port,
+            user: config.user,
+            password: config.password,
+            database: config.database
         });
         await db
         .query(`DELETE from Room WHERE room_id='${room}'`);
@@ -163,11 +167,11 @@ wsServer.on("connection", (socket) => {
     const showHistory = async (room) => {
         try {
             let db = await mysql.createConnection({
-                host: "localhost",
-                user: "root",
-                port: "3306",
-                password: "password",
-                database: "test",
+                host: config.host,
+                port: config.port,
+                user: config.user,
+                password: config.password,
+                database: config.database
             });
             let [hist] = await db
             .query(`SELECT * FROM ChatMessage WHERE room_id='${room}'`);
@@ -203,35 +207,24 @@ wsServer.on("connection", (socket) => {
 const set_msgTable = async (msg, time, sender, roomId) => {
     try{
         let db = await mysql.createConnection({
-            host: "localhost",
-            user: "root",
-            port: "3306",
-            password: "password",
-            database: "test",
+            host: config.host,
+            port: config.port,
+            user: config.user,
+            password: config.password,
+            database: config.database
         });
         // 가장 최근에 보낸 msg Id 찾기 == msfInfo[0]
         await db.query(`INSERT INTO ChatMessage (message, time, User_Id, room_id) VALUES('${msg}', '${time}', '${sender}', '${roomId}')`);
-        //let msgInfo = await db.query(`SELECT message_id, FROM ChatMessage WHERE room_id='${roomId}' AND time = (SELECT max(time) FROM ChatMessage WHERE room_id='${roomId}')`);
         let msgInfo = await db.query(`SELECT message_id FROM ChatMessage ORDER BY time DESC LIMIT 1`);
         msgID = msgInfo[0];
-        console.log(msgInfo[0]);
+        msgID = msgID[0]["message_id"];
+        console.log(msgID);
 
-        // (1)
-        app.post('http://3.39.141.110:8080/alarm/message', function(req, res){
-            console.log('send');
-            res.send(msgID);
-        })
-        console.log(msgID[0]);
 
-        // (2)
-        // request.post({
-        //     headers : {'content-type' : 'application/json'},
-        //     url : 'http://3.39.141.110:8080/alarm/message',
-        //     body: msgID,
-        //     json : true,
-        // }, function(err, res, body){
-        //     res.json(body);
-        // })
+        axios.post(
+            'http://3.39.141.110:8080/alarm/message', 
+            { chatMessageId : msgID }
+        );
     }
     catch(err){
         console.log('err in set_msgTable', err);
@@ -243,14 +236,14 @@ const set_msgTable = async (msg, time, sender, roomId) => {
 const get_user_info = async (req, res) => {
     try {
         let db = await mysql.createConnection({
-            host: "localhost",
-            user: "root",
-            port: "3306",
-            password: "password",
-            database: "test",
+            host: config.host,
+            port: config.port,
+            user: config.user,
+            password: config.password,
+            database: config.database
         });
         // user nickname으로 DB에서 user_Id 가져오기
-        let [us] = await db.query(`SELECT * FROM User WHERE User.nickname='${user.nickname}' or User.nickname='${partner.nickname}'`);
+        let [us] = await db.query(`SELECT * FROM User WHERE User.nickname='${user.nickname}' or User.nickname='${partner.nickname}';`);
         if(us[0].nickname==user.nickname){
             user.Id = us[0].Id;
             partner.Id = us[1].Id;

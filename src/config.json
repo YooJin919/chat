@@ -1,0 +1,7 @@
+{
+    "host": "codelivery.cwfwgpd9kjmh.ap-northeast-2.rds.amazonaws.com", 
+    "port": 3306,
+    "user": "Codelivery",    
+    "password": "Codelivery!0", 
+    "database": "Codelivery"
+}

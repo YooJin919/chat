@@ -11,8 +11,8 @@ const UserNum = ChatDiv.querySelector("#num");
 // user = window.localStorage.getItem('user');
 
 // ## dummy data로 test
-let roomId = 'dongha jin';
-let user = 'dongha';
+let roomId = '이성규 장성호';
+let user = '이성규';
 
 
 socket.emit("makeRoom", user, roomId); 
