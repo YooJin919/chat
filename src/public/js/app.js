@@ -10,11 +10,13 @@ const UserNum = ChatDiv.querySelector("#num");
 // roomId = window.localStorage.getItem('roomId');
 // user = window.localStorage.getItem('user');
 
-
 // ## dummy data로 test
 let roomId = 'dongha jin';
 let user = 'dongha';
+
+
 socket.emit("makeRoom", user, roomId); 
+
 
 // const socket = io();
 const newchat = document.getElementById("newchat");
@@ -76,6 +78,13 @@ function handleMessageSubmit(event){
     socket.emit("new_msg", input.value, roomId, time, ()=>{
         addMessage(`You: ${value}`);
         addNum(`${time}`);
+        // //시간 제한
+        // socket.timeout(5000).emit("overTime", (err) => {
+        //     if (err) {
+        //         // the other side did not acknowledge the event in the given delay
+        //         console.log(err);
+        //     }
+        // });
     }); 
     console.log("# front send msg to me : socket.emit : 'new_msg'");
     input.value ="";

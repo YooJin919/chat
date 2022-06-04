@@ -2,6 +2,7 @@ import express from "express";
 import http from "http";
 import axios from "axios";
 import socketIO from "socket.io";
+import { urlencoded } from "express";
 
 // 같은 server에서 http, websocket 서버 2개 돌림
 const app = express();
@@ -9,6 +10,7 @@ const httpServer = http.createServer(app);
 const wsServer = socketIO(httpServer);
 const mysql = require("mysql2/promise"); // mysql 패키지
 const bodyParser = require('body-parser');
+const request = require('request');
 require('dotenv').config(); // .env 파일을 읽어오기 위한 패키지
 
 // pug 페이지 rendering 하기 위한 설정
@@ -23,16 +25,13 @@ app.use(bodyParser.urlencoded({extended: true}));
 app.get("/", (_, res)=>{
     res.render("home"); // home.pug rendering중
 })
-app.get("/matchResult", (_, res)=>{
-    res.render("chatRoom");
-})
-
 
 // AUTO_INCREMENT값 초기화
 // set @count=0;
 // update TABLE_NAME set 속성값=@count:=@count+1;
 
 let clientNum = 0;
+let msgID = 0;
 
 // 사용자, 상대방 정보
 let user = {
@@ -137,13 +136,10 @@ wsServer.on("connection", (socket) => {
         await showHistory(roomId);
     })
 
-    // 시간 제한
-    // socket.timeout(5000).emit("overTime", (err) => {
-    //     if (err) {
-    //         // the other side did not acknowledge the event in the given delay
-    //         console.log(err);
-    //     }
-    // });
+    // // 제한시간 내에 메세지 전송 실패
+    // socket.on("overTime", ()=>{
+    //     console.log("Fail to send msg");
+    // })
 
     // new_msg : 나를 제외한 사람에게 msg 보냄
     socket.on("new_msg", (msg, room, time, sendToMe)=>{
@@ -198,8 +194,6 @@ wsServer.on("connection", (socket) => {
                     socket.to(room).emit("time",`${time}`);
                 }
             });
-
-
         } catch(err){
             console.log('err in showHistory\n', err);
         }
@@ -215,8 +209,29 @@ const set_msgTable = async (msg, time, sender, roomId) => {
             password: "password",
             database: "test",
         });
-        await db.query(`INSERT INTO ChatMessage (message, time, User_Id, room_id) VALUES('${msg}', '${time}', '${user.Id}', '${roomId}')`);
-        
+        // 가장 최근에 보낸 msg Id 찾기 == msfInfo[0]
+        await db.query(`INSERT INTO ChatMessage (message, time, User_Id, room_id) VALUES('${msg}', '${time}', '${sender}', '${roomId}')`);
+        //let msgInfo = await db.query(`SELECT message_id, FROM ChatMessage WHERE room_id='${roomId}' AND time = (SELECT max(time) FROM ChatMessage WHERE room_id='${roomId}')`);
+        let msgInfo = await db.query(`SELECT message_id FROM ChatMessage ORDER BY time DESC LIMIT 1`);
+        msgID = msgInfo[0];
+        console.log(msgInfo[0]);
+
+        // (1)
+        app.post('http://3.39.141.110:8080/alarm/message', function(req, res){
+            console.log('send');
+            res.send(msgID);
+        })
+        console.log(msgID[0]);
+
+        // (2)
+        // request.post({
+        //     headers : {'content-type' : 'application/json'},
+        //     url : 'http://3.39.141.110:8080/alarm/message',
+        //     body: msgID,
+        //     json : true,
+        // }, function(err, res, body){
+        //     res.json(body);
+        // })
     }
     catch(err){
         console.log('err in set_msgTable', err);
@@ -266,6 +281,7 @@ const get_user_info = async (req, res) => {
         console.log('err in get_user_info\n', err);
     }
 }
+
 
 const handleListen = () => {
     console.log(`Listening on http://localhost:3000`);

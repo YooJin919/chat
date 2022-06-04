@@ -33,7 +33,7 @@ main{
 }
 
 #chat form input{
-    font-size: 12px;
+    font-size: 16px;
     height: 100%;
     flex: 8;
     border: none;
@@ -41,7 +41,7 @@ main{
 
 #chat form button{
     flex: 1;
-    font-size: 20px;
+    font-size: 30px;
     color: white;
     background: #D84D4D;
     border: none;
@@ -61,13 +61,13 @@ main{
 #message{
     border-radius: 5px;
     padding: 0.5rem;
-    font-size: 12px;
+    font-size: 16px;
     margin: 0 5px;
     flex: 7;
 }
 
 #time {
-    font-size: 10px;
+    font-size: 12px;
     margin: 0 5px;
 }
 
