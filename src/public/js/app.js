@@ -101,6 +101,7 @@ socket.on("NoUser",()=>{
 
 socket.on("bye", (left_user)=>{
     addMessage_receive(`상대방이 채팅방을 나갔습니다.`);
+    newchat.scrollTo(0, newchat.scrollHeight);
 });
 
 socket.on("ShowHistory", (value, time)=>{
