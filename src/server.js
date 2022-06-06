@@ -254,7 +254,6 @@ const get_user_info = async (req, res) => {
         console.log('user : ', user, ' partner : ',partner);
 
         // DB에 roomId 저장 // 중복된 roomId 존재하면 room 추가 X
-        roomId = user.nickname + " " + partner.nickname;
         let [check] = await db.query('SELECT * FROM Room WHERE room_id=?',roomId);
         console.log(check);
         if(check.length!=0)
