@@ -50,7 +50,6 @@ let partner = {
 let roomId = '';
 
 
-
 wsServer.on("disconnect", (reason)=>{
     console.log(reason);
     console.log('socket disconneted!');
@@ -141,10 +140,7 @@ wsServer.on("connection", (socket) => {
         await showHistory(roomId);
     })
 
-    // // 제한시간 내에 메세지 전송 실패
-    // socket.on("overTime", ()=>{
-    //     console.log("Fail to send msg");
-    // })
+
 
     // new_msg : 나를 제외한 사람에게 msg 보냄
     socket.on("new_msg", (msg, room, time, sendToMe)=>{
