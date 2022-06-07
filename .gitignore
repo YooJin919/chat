@@ -1,2 +1,4 @@
 
 node_modules
+/src/db_connect.js
+/src/db_info.js
