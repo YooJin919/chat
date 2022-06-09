@@ -33,6 +33,7 @@ main{
 }
 
 #chat form input{
+    margin-left: 13px;
     font-size: 16px;
     height: 100%;
     flex: 8;
@@ -43,7 +44,8 @@ main{
     flex: 1;
     font-size: 30px;
     color: white;
-    background: #D84D4D;
+    /*background: #D84D4D;*/
+    background: #216FEA;
     border: none;
     height: 100%;
     border-radius: 3px;
@@ -78,8 +80,10 @@ main{
 
 .sent#message{
     color: white;
-    background-color: #e27b7b;
+    /*background-color: #e27b7b;*/
+    background-color: #78B4F8;
 }
+
 
 .receive#message{
     border: 0.5px solid rgb(232, 226, 226);

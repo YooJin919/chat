@@ -14,14 +14,19 @@ html(lang="ko")
     body 
         script(type='text/javascript').
             console.log('start');
-            //window.localStorage.setItem('jin', 'hi');
             async function getMatchResult(username, RoomName){
+                // let user1 = window.localStorage.getItem('user');
+                // if(user1 != undefined) {
+                // await window.localStorage.setItem('user2', username);
+                // } else {
+                // await window.localStorage.setItem('user1', username);
+                // }
                 let user = username;
                 let roomId = RoomName;
                 await window.localStorage.setItem('user', user);
                 await window.localStorage.setItem('roomId', roomId);
                 console.log(`user : ${user}, roomname : ${roomId}`);
-                alert(`${user}, ${roomId}`);
+                //alert(`${user}, ${roomId}`);
             };
 
         main

@@ -4,18 +4,26 @@ const ChatDiv = document.getElementById("chat");
 ChatDiv.hidden = true;
 const UserNum = ChatDiv.querySelector("#num");
 
-// ## flutter에서 받아오는 정보
-// let roomId = "";
-// let user = "";
-// roomId = window.localStorage.getItem('roomId');
-// user = window.localStorage.getItem('user');
 
-// ## dummy data로 test
-let roomId = '돔희 성규';
-let user = '성규';
+// ---------------------------------------------- //
+let roomId = "";
+let user = "";
 
+moveURL();
 
-socket.emit("makeRoom", user, roomId); 
+async function moveURL(){
+    // ## flutter에서 받아오는 정보
+    roomId = window.localStorage.getItem('roomId');
+    user = window.localStorage.getItem('user');
+
+    // ## dummy data로 test
+    // roomId = '돔희 성규';
+    // user = '성규';
+    socket["username"] = user;
+    console.log('move to ', socket.username);
+    socket.emit("makeRoom", socket.username, roomId);
+}
+// ---------------------------------------------- //
 
 
 // const socket = io();
@@ -75,16 +83,9 @@ function handleMessageSubmit(event){
     let seconds = ('0' + today.getSeconds()).slice(-2);
     let time = `${year}-${month}-${date} ${hours}:${minutes}:${seconds}`;
 
-    socket.emit("new_msg", input.value, roomId, time, ()=>{
+    socket.emit("new_msg", socket.username, input.value, roomId, time, ()=>{
         addMessage(`You: ${value}`);
         addNum(`${time}`);
-        // //시간 제한
-        // socket.timeout(5000).emit("overTime", (err) => {
-        //     if (err) {
-        //         // the other side did not acknowledge the event in the given delay
-        //         console.log(err);
-        //     }
-        // });
     }); 
     console.log("# front send msg to me : socket.emit : 'new_msg'");
     input.value ="";
@@ -104,7 +105,12 @@ socket.on("bye", (left_user)=>{
     newchat.scrollTo(0, newchat.scrollHeight);
 });
 
-socket.on("ShowHistory", (value, time)=>{
+socket.on("ShowHistory_me", (value, time)=>{
     addMessage(`You: ${value}`);
     addNum(`${time}`);
+});
+
+socket.on("ShowHistory_partner", (sender, value, time)=>{
+    addMessage_receive(`${sender}: ${value}`);
+    addNum_receive(`${time}`);
 });

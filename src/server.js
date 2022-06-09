@@ -22,7 +22,7 @@ app.use(express.json());
 app.use(bodyParser.urlencoded({extended: true}));
 
 
-app.get("/", (_, res)=>{
+app.get("/*", (_, res)=>{
     res.render("home"); // home.pug rendering중
 })
 
@@ -37,6 +37,7 @@ const config = require('./config.json');
 let clientNum = 0;
 let msgID = 0;
 
+
 // 사용자, 상대방 정보
 let user = {
     nickname: "",
@@ -48,7 +49,7 @@ let partner = {
 };
 // Socket room을 만드는 Id = 사용자 2명의 nickname
 let roomId = '';
-
+let senderId = partner.Id;
 
 wsServer.on("disconnect", (reason)=>{
     console.log(reason);
@@ -115,7 +116,6 @@ wsServer.on("connection", (socket) => {
     // mobile에서 매칭된 사용자와 방정보 받기
     socket.on("makeRoom", async (username, room)=>{
         console.log(username, room);
-        
         // user, partner nickname 설정
         let u = room.split(" ");
         if(u[0]==username){
@@ -137,31 +137,33 @@ wsServer.on("connection", (socket) => {
 
         await get_user_info();
 
-        await showHistory(roomId);
+        await showHistory(roomId, username);
     })
 
 
 
     // new_msg : 나를 제외한 사람에게 msg 보냄
-    socket.on("new_msg", (msg, room, time, sendToMe)=>{
+    socket.on("new_msg", async (username, msg, room, time, sendToMe)=>{
+        await get_user_id(username);
         if(countUserNum(roomId)===1)
             socket.emit("NoUser");
         else{
-            //socket.broadcast.emit("msg",`${socket.id}: ${msg}`);
-            socket.to(room).emit("msg",`${partner.nickname}: ${msg}`);
+            socket.to(room).emit("msg",`${username}: ${msg}`);
+            console.log('user name : ', username, 'msg : ', msg);
             socket.to(room).emit("time",`${time}`);
-            set_msgTable(msg, time, user.Id, room);
-            sendToMe();
-            console.log('# server : socket.rooms : ', socket.rooms);
-            console.log('# server : socket.id : ', socket.id);
-            console.log('# server send msg except me : socket.emit : ', msg);
-            console.log(msg, time, socket.id, room);
+
+
+            set_msgTable(msg, time, senderId, room);
+            sendToMe(); // 나한테 msg 보냄
+            // console.log('# server : socket.rooms : ', socket.rooms);
+            // console.log('# server : socket.id : ', socket.id);
+            // console.log('# server send msg except me : socket.emit : ', msg);
+            console.log(msg, time, socket.id, room, ' / sender Id : ',senderId);
         }
     });
-    // socket.emit("receiveMsg", msg); => 방에 있는 모든 사람한테 메세지 전송
-    // socket.broadcast.emit("receiveMsg", msg); => 메세지를 보낸 사람을 제외하고, 방에 있는 모든 사람한테 메세지 전송
 
-    const showHistory = async (room) => {
+    const showHistory = async (room, username) => {
+        await get_user_id(username)
         try {
             let db = await mysql.createConnection({
                 host: config.host,
@@ -178,7 +180,7 @@ wsServer.on("connection", (socket) => {
                 let timest = new Date(hist.time);
                 console.log(time);
                 console.log(typeof(hist.time.toString()));
-
+                
                 let year = timest.getFullYear();
                 let month = ('0' + (timest.getMonth() + 1)).slice(-2);
                 let date = ('0' + timest.getDate()).slice(-2);
@@ -187,12 +189,21 @@ wsServer.on("connection", (socket) => {
                 let seconds = ('0' + timest.getSeconds()).slice(-2);
                 let time = `${year}-${month}-${date} ${hours}:${minutes}:${seconds}`;
                 
+                user.nickname = username;
+                user.Id = senderId;
+
+                let findName = roomId.split(" ");
+                if(findName[0] == user.nickname)
+                    partner.nickname = findName[1];
+                else
+                    partner.nickname = findName[0];
+                console.log(user.nickname);
+                console.log('partner nickname : ',partner.nickname);
                 // room_id 에서 내가 아닌 것 = 상대방
                 if(hist.User_Id==user.Id)
-                    socket.emit("ShowHistory", hist.message, time);
+                    socket.emit("ShowHistory_me", hist.message, time);
                 else{
-                    socket.to(room).emit("msg",`${partner.nickname}: ${hist.message}`);
-                    socket.to(room).emit("time",`${time}`);
+                    socket.emit("ShowHistory_partner", partner.nickname, hist.message, time)
                 }
             });
         } catch(err){
@@ -225,6 +236,28 @@ const set_msgTable = async (msg, time, sender, roomId) => {
     }
     catch(err){
         console.log('err in set_msgTable', err);
+    }
+}
+
+
+
+const get_user_id = async (username) => {
+    try {
+        let db = await mysql.createConnection({
+            host: config.host,
+            port: config.port,
+            user: config.user,
+            password: config.password,
+            database: config.database
+        });
+        // user nickname으로 DB에서 user_Id 가져오기
+        let [U] = await db.query(`SELECT * FROM User WHERE User.nickname='${username}';`);
+        console.log('username in get_user_id: ',username);
+        console.log('U : ',U);
+        senderId = U[0].Id;
+        console.log('sender Id : ',senderId);
+    } catch(err){
+        console.log('err in get_user_id\n', err);
     }
 }
 
