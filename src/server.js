@@ -3,6 +3,7 @@ import http from "http";
 import axios from "axios";
 import socketIO from "socket.io";
 import { urlencoded } from "express";
+import { fstat } from "fs";
 
 // 같은 server에서 http, websocket 서버 2개 돌림
 const app = express();
@@ -22,8 +23,11 @@ app.use(express.json());
 app.use(bodyParser.urlencoded({extended: true}));
 
 
-app.get("/*", (_, res)=>{
+app.get("/", (_, res)=>{
     res.render("home"); // home.pug rendering중
+})
+app.get("/end", (_, res)=>{
+    res.render("end.pug");
 })
 
 // DB Connect
@@ -50,13 +54,7 @@ let partner = {
 // Socket room을 만드는 Id = 사용자 2명의 nickname
 let roomId = '';
 let senderId = partner.Id;
-
-wsServer.on("disconnect", (reason)=>{
-    console.log(reason);
-    console.log('socket disconneted!');
-    socket.emit('close');
-})
-
+let end = 0;
 
 function countUserNum(room){
     let num = wsServer.sockets.adapter.rooms.get(room)?.size;
@@ -74,12 +72,13 @@ const RemoveRoom = async (room) => {
         });
         await db
         .query(`DELETE from Room WHERE room_id='${room}'`);
+
+
     } catch(err){
         console.log('error in RemoveRoom');
         console.log(err);
     }
 }
-
 
 
 // socket server 연결
@@ -91,13 +90,7 @@ wsServer.on("connection", (socket) => {
         console.log('connecting error !!');
     });
 
-    socket.on("disconnect", (reason) => {
-        if (reason === "transport error") {
-            console.log('Network ERROR');
-            console.log(reason);
-        }
-    }); 
-
+    // 사용자가 채팅방 나감
     socket.on("disconnecting", ()=>{
         clientNum = countUserNum(roomId);
         console.log('the number of client in this room : ',clientNum-1);
@@ -105,13 +98,16 @@ wsServer.on("connection", (socket) => {
         socket.rooms.forEach(room => {
             socket.to(room).emit("bye");
         });
-        
-        // 채팅방에 사용자가 0명이면, Room 삭제 & DB에서 관련 정보 삭제
-        if((clientNum-1)===0){
-            RemoveRoom(roomId);
-        }
-            
     })
+
+    // 배달 완료
+    socket.on("endProcess", (room)=>{
+        end = end + 1;
+        console.log('end : ',end);
+        if(end >= 2){
+            RemoveRoom(room);
+        }
+    });
 
     // mobile에서 매칭된 사용자와 방정보 받기
     socket.on("makeRoom", async (username, room)=>{
@@ -125,15 +121,18 @@ wsServer.on("connection", (socket) => {
             user.nickname = u[1];
             partner.nickname = u[0];
         }
-        console.log(`user : ${user.nickname}, partner : ${partner.nickname}`);
+        //console.log(`user : ${user.nickname}, partner : ${partner.nickname}`);
         roomId = room; // roomId 설정
 
-        console.log('socket.id : ',socket.id);
-        console.log('socket.rooms (before join) : ',socket.rooms);
+        //console.log('socket.id : ',socket.id);
+        //console.log('socket.rooms (before join) : ',socket.rooms);
         socket.join(roomId); // room 생성
-        console.log('socket.rooms (after join) : ',socket.rooms);
-        clientNum = countUserNum(roomId);
-        console.log('the number of client in this room: ',clientNum);
+        socket.rooms.forEach(room => {
+            socket.to(room).emit("hello");
+        });
+        //console.log('socket.rooms (after join) : ',socket.rooms);
+        //clientNum = countUserNum(roomId);
+        //console.log('the number of client in this room: ',clientNum);
 
         await get_user_info();
 
@@ -145,20 +144,31 @@ wsServer.on("connection", (socket) => {
     // new_msg : 나를 제외한 사람에게 msg 보냄
     socket.on("new_msg", async (username, msg, room, time, sendToMe)=>{
         await get_user_id(username);
-        if(countUserNum(roomId)===1)
-            socket.emit("NoUser");
+        if(countUserNum(roomId)===1){
+
+            //socket.emit("NoUser"); // 있어야 할까 ?
+
+            socket.to(room).emit("msg",`${username}: ${msg}`);
+            socket.to(room).emit("time",`${time}`);
+            
+            //console.log('user name : ', username, 'msg : ', msg);
+
+            await set_msgTable(msg, time, senderId, room);
+            sendToMe(); // 나한테 msg 보냄
+            sendPush(room);
+        }
         else{
             socket.to(room).emit("msg",`${username}: ${msg}`);
-            console.log('user name : ', username, 'msg : ', msg);
             socket.to(room).emit("time",`${time}`);
-
+            
+            //console.log('user name : ', username, 'msg : ', msg);
 
             set_msgTable(msg, time, senderId, room);
             sendToMe(); // 나한테 msg 보냄
             // console.log('# server : socket.rooms : ', socket.rooms);
             // console.log('# server : socket.id : ', socket.id);
             // console.log('# server send msg except me : socket.emit : ', msg);
-            console.log(msg, time, socket.id, room, ' / sender Id : ',senderId);
+            // console.log(msg, time, socket.id, room, ' / sender Id : ',senderId);
         }
     });
 
@@ -221,9 +231,25 @@ const set_msgTable = async (msg, time, sender, roomId) => {
             password: config.password,
             database: config.database
         });
-        // 가장 최근에 보낸 msg Id 찾기 == msfInfo[0]
         await db.query(`INSERT INTO ChatMessage (message, time, User_Id, room_id) VALUES('${msg}', '${time}', '${sender}', '${roomId}')`);
-        let msgInfo = await db.query(`SELECT message_id FROM ChatMessage ORDER BY time DESC LIMIT 1`);
+    }
+    catch(err){
+        console.log('err in set_msgTable', err);
+    }
+}
+
+const sendPush = async (room) => {
+    try {
+        let db = await mysql.createConnection({
+            host: config.host,
+            port: config.port,
+            user: config.user,
+            password: config.password,
+            database: config.database
+        });
+        // 가장 최근에 보낸 msg Id 찾기 == msfInfo[0]
+        
+        let msgInfo = await db.query(`SELECT message_id FROM ChatMessage WHERE room_id=${room} ORDER BY time DESC LIMIT 1`);
         msgID = msgInfo[0];
         msgID = msgID[0]["message_id"];
         console.log(msgID);
@@ -233,12 +259,10 @@ const set_msgTable = async (msg, time, sender, roomId) => {
             'http://3.39.141.110:8080/alarm/message', 
             { chatMessageId : msgID }
         );
-    }
-    catch(err){
-        console.log('err in set_msgTable', err);
+    } catch(err){
+        console.log('err in sendPush', err);
     }
 }
-
 
 
 const get_user_id = async (username) => {

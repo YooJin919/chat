@@ -40,6 +40,19 @@ main{
     border: none;
 }
 
+#end form button{
+    flex: 1;
+    font-size: 15px;
+    color: white;
+    background: #D84D4D;
+    padding:5px;
+    margin:10px;
+    border: none;
+    height: 100%;
+    border-radius: 3px;
+    float: right;
+}
+
 #chat form button{
     flex: 1;
     font-size: 30px;

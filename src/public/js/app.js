@@ -3,11 +3,13 @@ const socket = io();
 const ChatDiv = document.getElementById("chat");
 ChatDiv.hidden = true;
 const UserNum = ChatDiv.querySelector("#num");
+const end = document.getElementById("end");
 
 
 // ---------------------------------------------- //
 let roomId = "";
 let user = "";
+
 
 moveURL();
 
@@ -16,7 +18,7 @@ async function moveURL(){
     roomId = window.localStorage.getItem('roomId');
     user = window.localStorage.getItem('user');
 
-    // ## dummy data로 test
+    // //## dummy data로 test
     // roomId = '돔희 성규';
     // user = '성규';
     socket["username"] = user;
@@ -29,6 +31,7 @@ async function moveURL(){
 // const socket = io();
 const newchat = document.getElementById("newchat");
 const chat = document.getElementById("chat");
+const endButton = end.querySelector("#fin");
 const msgForm = chat.querySelector("#msg");
 
 function addMessage(msg){
@@ -91,17 +94,30 @@ function handleMessageSubmit(event){
     input.value ="";
 }
 
+function handleEnd(){
+    console.log("end button clicked!");
+    socket.emit("endProcess", roomId);
+}
+
+endButton.addEventListener("submit", handleEnd);
+
 msgForm.addEventListener("submit", handleMessageSubmit);
 
 socket.on("msg", addMessage_receive);//상대가 보낸 메세지
 socket.on("time", addNum_receive);
 
-socket.on("NoUser",()=>{
-    addMessage_receive(`상대방이 없습니다.`);
-})
+// socket.on("NoUser",()=>{
+//     addMessage_receive(`상대방이 채팅방에 없습니다.`); // 있어야 할까?
+// })
+
 
 socket.on("bye", (left_user)=>{
     addMessage_receive(`상대방이 채팅방을 나갔습니다.`);
+    newchat.scrollTo(0, newchat.scrollHeight);
+});
+
+socket.on("hello", ()=>{
+    addMessage_receive(`상대방이 채팅방에 들어왔습니다.`);
     newchat.scrollTo(0, newchat.scrollHeight);
 });
 
