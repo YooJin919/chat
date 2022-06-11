@@ -95,15 +95,18 @@ wsServer.on("connection", (socket) => {
         clientNum = countUserNum(roomId);
         console.log('the number of client in this room : ',clientNum-1);
 
-        socket.rooms.forEach(room => {
-            socket.to(room).emit("bye");
-        });
+        // socket.rooms.forEach(room => {
+        //     socket.to(room).emit("bye");
+        // });
     })
 
     // 배달 완료
     socket.on("endProcess", (room)=>{
         end = end + 1;
         console.log('end : ',end);
+        socket.rooms.forEach(room => {
+            socket.to(room).emit("bye");
+        });
         if(end >= 2){
             RemoveRoom(room);
         }
@@ -127,9 +130,7 @@ wsServer.on("connection", (socket) => {
         //console.log('socket.id : ',socket.id);
         //console.log('socket.rooms (before join) : ',socket.rooms);
         socket.join(roomId); // room 생성
-        socket.rooms.forEach(room => {
-            socket.to(room).emit("hello");
-        });
+
         //console.log('socket.rooms (after join) : ',socket.rooms);
         //clientNum = countUserNum(roomId);
         //console.log('the number of client in this room: ',clientNum);

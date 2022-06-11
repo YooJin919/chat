@@ -116,10 +116,6 @@ socket.on("bye", (left_user)=>{
     newchat.scrollTo(0, newchat.scrollHeight);
 });
 
-socket.on("hello", ()=>{
-    addMessage_receive(`상대방이 채팅방에 들어왔습니다.`);
-    newchat.scrollTo(0, newchat.scrollHeight);
-});
 
 socket.on("ShowHistory_me", (value, time)=>{
     addMessage(`You: ${value}`);
