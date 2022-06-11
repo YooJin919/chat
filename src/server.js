@@ -151,11 +151,12 @@ wsServer.on("connection", (socket) => {
             socket.to(room).emit("msg",`${username}: ${msg}`);
             socket.to(room).emit("time",`${time}`);
             
-            //console.log('user name : ', username, 'msg : ', msg);
+            console.log('user name : ', username, 'msg : ', msg);
 
             await set_msgTable(msg, time, senderId, room);
             sendToMe(); // 나한테 msg 보냄
-            sendPush(room);
+            console.log(roomId);
+            sendPush(roomId);
         }
         else{
             socket.to(room).emit("msg",`${username}: ${msg}`);
@@ -216,6 +217,8 @@ wsServer.on("connection", (socket) => {
                     socket.emit("ShowHistory_partner", partner.nickname, hist.message, time)
                 }
             });
+
+            db.end();
         } catch(err){
             console.log('err in showHistory\n', err);
         }
@@ -232,6 +235,7 @@ const set_msgTable = async (msg, time, sender, roomId) => {
             database: config.database
         });
         await db.query(`INSERT INTO ChatMessage (message, time, User_Id, room_id) VALUES('${msg}', '${time}', '${sender}', '${roomId}')`);
+        db.end();
     }
     catch(err){
         console.log('err in set_msgTable', err);
@@ -249,7 +253,7 @@ const sendPush = async (room) => {
         });
         // 가장 최근에 보낸 msg Id 찾기 == msfInfo[0]
         
-        let msgInfo = await db.query(`SELECT message_id FROM ChatMessage WHERE room_id=${room} ORDER BY time DESC LIMIT 1`);
+        let msgInfo = await db.query(`SELECT message_id FROM ChatMessage WHERE room_id='${room}' ORDER BY time DESC LIMIT 1`);
         msgID = msgInfo[0];
         msgID = msgID[0]["message_id"];
         console.log(msgID);
@@ -280,6 +284,7 @@ const get_user_id = async (username) => {
         console.log('U : ',U);
         senderId = U[0].Id;
         console.log('sender Id : ',senderId);
+        db.end();
     } catch(err){
         console.log('err in get_user_id\n', err);
     }
@@ -323,6 +328,7 @@ const get_user_info = async (req, res) => {
         else{
             await db.query(`INSERT INTO ChatRoomJoin (User_Id1, User_Id2, room_id) VALUES('${user.Id}', '${partner.Id}', '${roomId}')`);
         }
+        db.end();
     } catch(err){
         console.log('err in get_user_info\n', err);
     }
